@@ -10,6 +10,7 @@ float sigmoid(float z){
   return 1/(1+exp(-z));
 }
 
+//apply the sigmoid function to each item in a vector
 vector<float> vectsigmoid(vector<float> z){
   vector<float> product;
   product.resize(z.size());
@@ -19,6 +20,7 @@ vector<float> vectsigmoid(vector<float> z){
   return product;
 }
 
+//dot product of two vectors
 float dot(vector<float> a, vector<float> b){  
   float product = 0;
   for (int i = 0; i < a.size(); i++){
@@ -27,6 +29,7 @@ float dot(vector<float> a, vector<float> b){
   return product;
 }
 
+//add two vectors
 vector<float> addvect(vector<float> a, vector<float> b){
   vector<float> product;
   product.resize(a.size());
@@ -73,9 +76,11 @@ vector<vector<float>> randvectvect(int& x, int& y){
 }
 
 //neural network feedforwards
-vector<vector<float>> feedforwards(const vector<vector<vector<float>>>& weights,
+vector<vector<float>> feedforwards(
+		   const vector<vector<vector<float>>>& weights,
 		   const vector<vector<float>>& biases,
-		   const vector<float>& input){
+		   const vector<float>& input
+		   ){
   vector<float> a = input;
   vector<float> dp;
   vector<vector<float>> out;
@@ -98,7 +103,6 @@ int main(){
   //size of the network
   int sizes[3] = {2,3,2};
 
-  
   //create weights
   vector<vector<vector<float>>> weights;
   weights.resize(sizeof(sizes)/sizeof(*sizes)-1);
@@ -110,7 +114,6 @@ int main(){
     i+=1;
   }
 
-  
   //create biases
   vector<vector<float>> biases;
   biases.resize(sizeof(sizes)/sizeof(*sizes)-1);
@@ -120,8 +123,6 @@ int main(){
     i+=1;
   }
 
-
-  
   //print weights
   cout << "weights:" << endl;
   for (auto& i : weights){
@@ -143,15 +144,11 @@ int main(){
     cout << "\n";
   }
 
-
-  vector<float> inp;
-  inp.resize(2);
-  inp[0] = 1;
-  inp[1] = 1;
+  vector<float> inp = {1,1};
   cout << "=================" << endl;
-  vector<vector<float>> x = feedforwards(weights, biases, inp);
+  vector<vector<float>> activations = feedforwards(weights, biases, inp);
   cout << "feedforwards:" << endl;
-  for (auto& i1 : x){
+  for (auto& i1 : activations){
     for (auto& i2 : i1){
       cout << i2 << ", ";
     }
