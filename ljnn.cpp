@@ -20,6 +20,21 @@ vector<float> vectsigmoid(vector<float> z){
   return product;
 }
 
+//derivative of sigmoid
+float sigmoidderiv(float x){
+  return sigmoid(x)*(1-sigmoid(x));
+}
+
+//derivative of sigmoid but for a whole vector
+vector<float> vectsigmoidderic(vector<float> x){
+  vector<float> product;
+  product.resize(x.size());
+  for (int i = 0; i < x.size(); i++){
+    product[i] = sigmoidderiv(x[i]);
+  }
+  return product;
+}
+
 //dot product of two vectors
 float dot(vector<float> a, vector<float> b){  
   float product = 0;
@@ -76,28 +91,49 @@ vector<vector<float>> randvectvect(int& x, int& y){
 }
 
 //neural network feedforwards
-vector<vector<float>> feedforwards(
-		   const vector<vector<vector<float>>>& weights,
-		   const vector<vector<float>>& biases,
-		   const vector<float>& input
-		   ){
+void feedforwards(const vector<vector<vector<float>>>& weights,
+		  const vector<vector<float>>& biases,
+		  const vector<float>& input,
+		  vector<vector<float>>& activations,
+		  vector<vector<float>>& presigactivations){
   vector<float> a = input;
   vector<float> dp;
-  vector<vector<float>> out;
-  out.resize(biases.size()+1);
-  out[0] = a;
+  activations[0] = a;
+  presigactivations[0] = a;
   for (int i = 0; i < 2; i++){
     dp.resize(biases[i].size());
     for (auto& idp : dp){
       idp = dot(weights[i][idp], a);
-      }
+    }
     a = addvect(dp, biases[i]);
+    presigactivations[i+1] = a;
     a = vectsigmoid(a);
-    out[i+1] = a;
+    activations[i+1] = a;
   }
-  return out;
-} 
+}
 
+//get error of last layer
+vector<float> getlasterror(const vector<vector<float>>& activations,
+			   const vector<vector<float>>& presigactivations,
+			   const vector<float>& desiredoutput
+			   ){
+  vector<float> deltalast;
+  deltalast.resize(activations.back().size());
+  for (int i = 0; i < activations.back().size(); i++){
+    deltalast[i] = (activations.back()[i] - desiredoutput[i])*sigmoidderiv(presigactivations.back()[i]);
+  }
+  return deltalast;
+}
+//get all errors
+vector<vector<float>> geterrors(const vector<vector<float>>& activations,
+				const vector<vector<float>>& presigactivations,
+				const vector<float>& desiredoutput
+				){
+  vector<vector<float>>delta;
+  delta.resize(activations.size());
+  delta.back() = getlasterror(activations, presigactivations, desiredoutput);
+  
+}
 //main
 int main(){
   //size of the network
@@ -146,7 +182,13 @@ int main(){
 
   vector<float> inp = {1,1};
   cout << "=================" << endl;
-  vector<vector<float>> activations = feedforwards(weights, biases, inp);
+
+  vector<vector<float>> activations;
+  vector<vector<float>> presigactivations;
+  activations.resize(biases.size()+1);
+  presigactivations.resize(biases.size()+1);
+  
+  feedforwards(weights, biases, inp, activations, presigactivations);
   cout << "feedforwards:" << endl;
   for (auto& i1 : activations){
     for (auto& i2 : i1){
@@ -154,5 +196,7 @@ int main(){
     }
     cout << endl;
   }
+
+  getlasterror(activations, presigactivations, {1,1});
   return 0;
 }
