@@ -5,6 +5,44 @@
 #include <cmath>
 using namespace std;
 
+//hadamard product of two vectors
+vector<float> hadamard(const vector<float>& a, const vector<float>& b){
+  vector<float> product;
+  product.resize(a.size());
+  for (int i = 0; i < a.size(); i++){
+    product[i] = a[i] * b[i];
+  }
+  return product;
+}
+
+//hadamard product of two vectors of vectors
+vector<vector<float>> vvhadamard(const vector<vector<float>>& a, const vector<vector<float>>& b){
+  vector<vector<float>> product;
+  product.resize(a.size());
+  for (int i = 0; i < a.size(); i++){
+    product[i].resize(a[i].size());
+  }
+  for (int i = 0; i < a.size(); i++){
+    product[i] = hadamard(a[i], b[i]);
+  }
+  return product;
+}
+
+//transpose vector of vectors
+vector<vector<float>> transpose(const vector<vector<float>>& a){
+  vector<vector<float>> result;
+  result.resize(a[0].size());
+  for (int i = 0; i < result.size(); i++){
+    result[i].resize(a.size());
+  }
+  for (vector<int>::size_type i = 0; i < a[0].size(); i++){
+    for (vector<int>::size_type j = 0; j < a.size(); j++){
+      result[i][j] = a[j][i];
+    }
+  }
+  return result;
+}
+
 //good old sigmoid function
 float sigmoid(float z){
   return 1/(1+exp(-z));
@@ -26,7 +64,7 @@ float sigmoidderiv(float x){
 }
 
 //derivative of sigmoid but for a whole vector
-vector<float> vectsigmoidderic(vector<float> x){
+vector<float> vectsigmoidderiv(vector<float> x){
   vector<float> product;
   product.resize(x.size());
   for (int i = 0; i < x.size(); i++){
@@ -127,12 +165,15 @@ vector<float> getlasterror(const vector<vector<float>>& activations,
 //get all errors
 vector<vector<float>> geterrors(const vector<vector<float>>& activations,
 				const vector<vector<float>>& presigactivations,
-				const vector<float>& desiredoutput
+				const vector<float>& desiredoutput,
+				const vector<vector<vector<float>>>& weights
 				){
   vector<vector<float>>delta;
   delta.resize(activations.size());
   delta.back() = getlasterror(activations, presigactivations, desiredoutput);
-  
+  for (int i = delta.size()-1; i > -1; i--){
+    //delta[i] = //hadamard(transpose(weights[i+1])*delta[i+1], vectsigmoidderiv(presigactivations[i])) //mock code
+  }
 }
 //main
 int main(){
