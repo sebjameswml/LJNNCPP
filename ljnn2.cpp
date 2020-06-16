@@ -114,9 +114,15 @@ void feedforwards(
 		  vector<vector<vector<float>>>& weights,
 		  vector<vector<float>>& biases,
 		  vector<vector<float>>& activations,
-		  vector<vector<float>>& presigactivations
+		  vector<vector<float>>& presigactivations,
+		  vector<float>& x,
+		  vector<float>& y
 		  ){
-
+  for (int layer = 0; i < activations.size()-1; layer++){
+    dot(weights[layer], activations[layer], x);
+    addvect(x, biases[layer], y);
+    sigmoid(y, activations[layer]);
+  }
 }
 
 
