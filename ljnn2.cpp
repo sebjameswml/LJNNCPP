@@ -79,16 +79,45 @@ void printvectvectvect(vector<vector<vector<float>>>& a){
 
 //=============MATH FUNCTIONS=============
 //sigmoid function
-void sigmoid(float& a, float& tomod){ //tomod will be modified by this function
+void sigmoid(float& a,
+	     float& tomod){ //tomod will be modified by this function
   tomod = 1/(1+exp(-a));
 }
 //sigmoid function for vectors
-void vectsigmoid(vector<float>& a, vector<float>& vecttomod){ //vecttomod will be modified by this function
+void vectsigmoid(vector<float>& a,
+		 vector<float>& vecttomod){ //vecttomod will be modified by this function
   for (int i = 0; i < a.size(); i++){
     sigmoid(a[i], vecttomod[i]);
   }
 }
+//dot product of two vectors
+void dot(vector<float>& a,
+	 vector<float>& b,
+	 float& product){ //product will be modified by this function
+  product = 0;
+  for (int i = 0; i < a.size(); i++){
+    product += (a[i] * b[i]);
+  }
+}
+void vectadd(vector<float>& a,
+	     vector<float>& b,
+	     vector<float>& product){ //product will be modified by this function
+  for (int i = 0; i < a.size(); i ++){
+    product[i] = a[i] + b[i];
+  }
+}
 
+
+
+//=============NN FUNCS=============
+void feedforwards(
+		  vector<vector<vector<float>>>& weights,
+		  vector<vector<float>>& biases,
+		  vector<vector<float>>& activations,
+		  vector<vector<float>>& presigactivations
+		  ){
+
+}
 
 
 
@@ -116,9 +145,12 @@ int main(){
   cout << "biases:" << endl;
   printvectvect(biases);
   vector<float> x = {1,2,3};
-  vector<float> y = {0,0,0};
-  vectsigmoid(x, y);
+  vector<float> y = {1,2,3};
+  float z = 0;
   cout << "-----" << endl;
+  dot(x,y,z);
+  vectsigmoid(x, y);
   printvect(y);
+  cout << "z " << z << endl;
   return 0;
 }
