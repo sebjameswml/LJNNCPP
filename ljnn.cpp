@@ -241,7 +241,7 @@ vector<float> singlevecmul(vector<float> a, float b){
 //main
 int main(){
   //size of the network
-  int sizes[3] = {2,3,2};
+  int sizes[3] = {10,10,10};
   //create weights
   vector<vector<vector<float>>> weights;
   weights.resize(sizeof(sizes)/sizeof(*sizes)-1);
@@ -257,7 +257,7 @@ int main(){
     biases[i] = randvect(sizes[i+1]);
   }
   //create some required vectors
-  vector<float> inp = {1,1};
+  vector<float> inp = {1,1,1,1,1,1,1,1,1,1};
   vector<vector<float>> activations;
   vector<vector<float>> presigactivations;
   vector<vector<float>> delta;
@@ -265,11 +265,12 @@ int main(){
   activations.resize(sizeof(sizes)/sizeof(*sizes));
   presigactivations.resize(sizeof(sizes)/sizeof(*sizes));
   //train
-  float eta = 10; //learning rate
+  float eta = 5; //learning rate
+  vector<float> desiredout = {1,1,1,1,1,1,1,1,1,1};
   for (int i = 0; i < 50; i++){
     feedforwards(weights, biases, inp, activations, presigactivations);
-    delta = geterrors(activations, presigactivations, {1,1}, weights);
-    cout << "cost" << MSE(activations.back(), {1,1}) << endl;
+    delta = geterrors(activations, presigactivations, desiredout, weights);
+    cout << "cost" << MSE(activations.back(), desiredout) << endl;
     //update biases
     for (int bi = 0; bi < biases.size(); bi++){
       biases[bi] = singlevecmul(subvect(biases[bi], delta[bi+1]), eta);
