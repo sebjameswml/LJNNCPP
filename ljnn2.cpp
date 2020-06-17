@@ -46,14 +46,14 @@ vector<vector<float>> randvectvect(int& x, int& y){
 
 //=============DISPLAYING VECTORS=============
 //print out each item of a vector
-void printvect(vector<float>& a){
+void printvect(const vector<float>& a){
   for (auto& i : a){
     cout << i << ", ";
   }
   cout << endl;
 }
 //print out each item of a vector of vectors
-void printvectvect(vector<vector<float>>& a){
+void printvectvect(const vector<vector<float>>& a){
   for (auto& i : a){
     for (auto& i2 : i){
       cout << i2 << ", ";
@@ -62,7 +62,7 @@ void printvectvect(vector<vector<float>>& a){
   }
 }
 //print out each item of a vector of vectors of vectors
-void printvectvectvect(vector<vector<vector<float>>>& a){
+void printvectvectvect(const vector<vector<vector<float>>>& a){
   for (auto& i : a){
     for (auto& i2 : i){
       for (auto& i3 : i2){
@@ -79,33 +79,33 @@ void printvectvectvect(vector<vector<vector<float>>>& a){
 
 //=============MATH FUNCTIONS=============
 //sigmoid function
-void sigmoid(float& a,
+void sigmoid(const float& a,
 	     float& tomod){ //tomod will be modified by this function
   tomod = 1/(1+exp(-a));
 }
 //sigmoid prime
-void sigmoidprime(float& a,
+void sigmoidprime(const float& a,
 		  float& tomod){ //tomod will be modified by this function
-  sigmoid(a, tomod); //set tomod to sigmoid(a)
-  tomod = tomod*(1-tomod); //this may not work
+  sigmoid(a, tomod);
+  tomod = tomod*(1-tomod);
 }
 //sigmoid function for vectors
-void vectsigmoid(vector<float>& a,
+void vectsigmoid(const vector<float>& a,
 		 vector<float>& vecttomod){ //vecttomod will be modified by this function
   for (int i = 0; i < a.size(); i++){
     sigmoid(a[i], vecttomod[i]);
   }
 }
 //sigmoid prime for vectors
-void vectsigmoidprime(vector<float>& a,
+void vectsigmoidprime(const vector<float>& a,
 		      vector<float>& vecttomod){ //vecttomod will be modified by this function
   for (int i = 0; i < a.size(); i++){
     sigmoidprime(a[i], vecttomod[i]);
   }
 }
 //dot product of two vectors
-void dot(vector<float>& a,
-	 vector<float>& b,
+void dot(const vector<float>& a,
+	 const vector<float>& b,
 	 float& product){ //product will be modified by this function
   product = 0;
   for (int i = 0; i < a.size(); i++){
@@ -113,39 +113,52 @@ void dot(vector<float>& a,
   }
 }
 //adds two vectors of the same size
-void vectadd(vector<float>& a,
-	     vector<float>& b,
+void vectadd(const vector<float>& a,
+	     const vector<float>& b,
 	     vector<float>& product){ //product will be modified by this function
   for (int i = 0; i < a.size(); i ++){
     product[i] = a[i] + b[i];
   }
 }
 //sets product to vector a - vector b
-void vectsub(vector<float>& a,
-	     vector<float>& b,
+void vectsub(const vector<float>& a,
+	     const vector<float>& b,
 	     vector<float>& product){ //product will be modified by this function
   for (int i = 0; i < a.size(); i++){
     product[i] = a[i] - b[i];
   }
 }
 //hadamard product for single vectors
-void hadamard(vector<float>& a,
-	      vector<float>& b,
+void hadamard(const vector<float>& a,
+	      const vector<float>& b,
 	      vector<float>& product //all 3 of these vectors must have identical sizes.
 	      ){
   for (int i = 0; i < a.size(); i++){
     product[i] = a[i] * b[i];
   }
 }
-
+//transpose vector of vectors
+void transpose(const vector<vector<float>>& a, vector<vector<float>>& transposed){ //transposed will be modified by this function
+  //this resizing could be moved out of function for optimisation
+  transposed.resize(a[0].size());
+  for (int i = 0; i < transposed.size(); i++){
+    transposed[i].resize(a.size());
+  }
+  
+  for (vector<int>::size_type i = 0; i < a[0].size(); i++){
+    for (vector<int>::size_type j = 0; j < a.size(); j++){
+      transposed[i][j] = a[j][i];
+    }
+  }
+}
 
 
 
 //=============NN FUNCS=============
 //runs a forwards pass through the network
 void feedforwards(
-		  vector<vector<vector<float>>>& weights,
-		  vector<vector<float>>& biases,
+		  const vector<vector<vector<float>>>& weights,
+		  const vector<vector<float>>& biases,
 		  vector<vector<float>>& activations,
 		  vector<vector<float>>& presigactivations,
 		  vector<float>& x
@@ -161,21 +174,43 @@ void feedforwards(
 }
 //backpropogation //geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, x, y, z);
 void geterrors(
-	       vector<vector<vector<float>>>& weights,
-	       vector<vector<float>>& biases,
-	       vector<vector<float>>& activations,
-	       vector<vector<float>>& presigactivations,
+	       const vector<vector<vector<float>>>& weights,
+	       const vector<vector<float>>& biases,
+	       const vector<vector<float>>& activations,
+	       const vector<vector<float>>& presigactivations,
 	       vector<vector<float>>& delta,
-	       vector<float>& desiredoutput,
+	       const vector<float>& desiredoutput,
 	       vector<float>& x,
 	       vector<float>& y,
 	       vector<float>& z
 	       ){
-  
+  //get error in output layer
   vectsub(activations.back(), desiredoutput, x); //make x output-desiredoutput
   vectsigmoidprime(presigactivations.back(), y); //make y = sigmoid prime of output presigactivations
   hadamard(x, y, z); //make z = the hadamard product of x and y
   delta.back() = z;
+  //go backwards through the network and calculate delta for the remaining layers
+
+  //creating these should be done out of the function for epic speeds
+  vector<vector<float>> transposedweights;
+  vector<float> matmulproduct;
+  vector<float> sigprime;
+  
+  for (int layer = delta.size()-2; layer > -1; layer--){
+
+    transpose(weights[layer], transposedweights);
+
+    matmulproduct.resize(activations[layer+1].size());
+    for (int mm = 0; mm < activations[layer+1].size(); mm++){
+      dot(transposedweights[mm], delta[layer+1], matmulproduct[mm]);
+    }
+
+    sigprime.resize(activations[layer+1].size());
+    vectsigmoidprime(activations[layer+1], sigprime);
+
+    delta[layer].resize(activations[layer+1].size());
+    hadamard(matmulproduct, sigprime, delta[layer]);
+  }
 }
 
 
@@ -235,12 +270,14 @@ int main(){
   vector<float> bpx;
   vector<float> bpy;
   vector<float> bpz;
-  vector<vector<float>> delta = {{0},{0},{0}};
+  vector<vector<float>> delta;
   vector<float> desiredoutput = {1,1,1,1};
   //these resizes are required for the geterrors() function
   bpx.resize(desiredoutput.size());
   bpy.resize(desiredoutput.size());
   bpz.resize(desiredoutput.size());
+
+  delta.resize(activations.size()-1);
   
   geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, bpx, bpy, bpz);
 
