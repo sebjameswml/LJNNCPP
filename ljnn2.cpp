@@ -83,11 +83,24 @@ void sigmoid(float& a,
 	     float& tomod){ //tomod will be modified by this function
   tomod = 1/(1+exp(-a));
 }
+//sigmoid prime
+void sigmoidprime(float& a,
+		  float& tomod){ //tomod will be modified by this function
+  sigmoid(a, tomod); //set tomod to sigmoid(a)
+  tomod = tomod*(1-tomod); //this may not work
+}
 //sigmoid function for vectors
 void vectsigmoid(vector<float>& a,
 		 vector<float>& vecttomod){ //vecttomod will be modified by this function
   for (int i = 0; i < a.size(); i++){
     sigmoid(a[i], vecttomod[i]);
+  }
+}
+//sigmoid prime for vectors
+void vectsigmoidprime(vector<float>& a,
+		      vector<float>& vecttomod){ //vecttomod will be modified by this function
+  for (int i = 0; i < a.size(); i++){
+    sigmoidprime(a[i], vecttomod[i]);
   }
 }
 //dot product of two vectors
@@ -99,6 +112,7 @@ void dot(vector<float>& a,
     product += (a[i] * b[i]);
   }
 }
+//adds two vectors of the same size
 void vectadd(vector<float>& a,
 	     vector<float>& b,
 	     vector<float>& product){ //product will be modified by this function
@@ -106,36 +120,77 @@ void vectadd(vector<float>& a,
     product[i] = a[i] + b[i];
   }
 }
+//sets product to vector a - vector b
+void vectsub(vector<float>& a,
+	     vector<float>& b,
+	     vector<float>& product){ //product will be modified by this function
+  for (int i = 0; i < a.size(); i++){
+    product[i] = a[i] - b[i];
+  }
+}
+//hadamard product for single vectors
+void hadamard(vector<float>& a,
+	      vector<float>& b,
+	      vector<float>& product //all 3 of these vectors must have identical sizes.
+	      ){
+  for (int i = 0; i < a.size(); i++){
+    product[i] = a[i] * b[i];
+  }
+}
+
 
 
 
 //=============NN FUNCS=============
+//runs a forwards pass through the network
 void feedforwards(
 		  vector<vector<vector<float>>>& weights,
 		  vector<vector<float>>& biases,
 		  vector<vector<float>>& activations,
 		  vector<vector<float>>& presigactivations,
-		  vector<float>& x,
+		  vector<float>& x
 		  ){
-  for (int layer = 0; i < activations.size()-1; layer++){
-    dot(weights[layer], activations[layer], x); //sets x to the dot product of weights[layer] and activations[layer]
-    addvect(x, biases[layer], presigactivations[layer]); //sets presigactivations[layer] to x+biases[layer]
-    vectsigmoid(y, activations[layer]); //sets activations[layer] to the (vect)sigmoid of presigactivations[layer]
+  for (int layer = 0; layer < activations.size()-1; layer++){
+    x.resize(activations[layer+1].size());
+    for (int neuron = 0; neuron < activations[layer].size(); neuron++){
+      dot(weights[layer][neuron], activations[layer], x[neuron]); //sets x to the dot product of weights[layer] and activations[layer]
+    }
+    vectadd(x, biases[layer], presigactivations[layer+1]); //sets presigactivations[layer] to x+biases[layer]
+    vectsigmoid(presigactivations[layer+1], activations[layer+1]); //sets activations[layer+1] to the (vect)sigmoid of presigactivations[layer]
   }
 }
+//backpropogation //geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, x, y, z);
+void geterrors(
+	       vector<vector<vector<float>>>& weights,
+	       vector<vector<float>>& biases,
+	       vector<vector<float>>& activations,
+	       vector<vector<float>>& presigactivations,
+	       vector<vector<float>>& delta,
+	       vector<float>& desiredoutput,
+	       vector<float>& x,
+	       vector<float>& y,
+	       vector<float>& z
+	       ){
+  
+  vectsub(activations.back(), desiredoutput, x); //make x output-desiredoutput
+  vectsigmoidprime(presigactivations.back(), y); //make y = sigmoid prime of output presigactivations
+  hadamard(x, y, z); //make z = the hadamard product of x and y
+  delta.back() = z;
+}
+
 
 
 
 //=============MAIN=============
 int main(){
   //set shape of network
-  int sizes[3] = {2,3,2};
+  int sizes[3] = {2,3,4};
   //create weights
   vector<vector<vector<float>>> weights;
   weights.resize(sizeof(sizes)/sizeof(*sizes)-1);
   //fill weights with random floats
   for (int i = 0; i < sizeof(sizes)/sizeof(*sizes)-1; i++){
-    weights[i] = randvectvect(sizes[i+1], sizes[i]);
+    weights[i] = randvectvect(sizes[i], sizes[i+1]);
   }
   //create biases
   vector<vector<float>> biases;
@@ -149,13 +204,47 @@ int main(){
   printvectvectvect(weights);
   cout << "biases:" << endl;
   printvectvect(biases);
-  vector<float> x = {1,2,3};
-  vector<float> y = {1,2,3};
-  float z = 0;
-  cout << "-----" << endl;
-  dot(x,y,z);
-  vectsigmoid(x, y);
-  printvect(y);
-  cout << "z " << z << endl;
+  cout << "=======" << endl;
+  
+  //create activations vector
+  vector<vector<float>> activations;
+  //allocate memory for activations
+  activations.resize(sizeof(sizes)/sizeof(*sizes));
+  for (int i = 0; i < sizeof(sizes)/sizeof(*sizes); i++){
+    activations[i].resize(sizes[i]);
+  }
+  //create pre-sigmoid activations vector
+  vector<vector<float>> presigactivations;
+  //allocate memory for pre-sigmoid activations vector
+  presigactivations.resize(sizeof(sizes)/sizeof(*sizes));
+  for (int i = 0; i < sizeof(sizes)/sizeof(*sizes); i++){
+    presigactivations[i].resize(sizes[i]);
+  }
+  //create vectors used to hold data, defined out-of function for possible optimisation
+  vector<float> ffx;
+  //set input activations:
+  activations[0] = {1,1};
+  //run a single feedforwards pass
+  feedforwards(weights, biases, activations, presigactivations, ffx);
+  //print activations
+  cout << "activations:" << endl;
+  printvectvect(activations);
+
+
+  //vectors required for backprop
+  vector<float> bpx;
+  vector<float> bpy;
+  vector<float> bpz;
+  vector<vector<float>> delta = {{0},{0},{0}};
+  vector<float> desiredoutput = {1,1,1,1};
+  //these resizes are required for the geterrors() function
+  bpx.resize(desiredoutput.size());
+  bpy.resize(desiredoutput.size());
+  bpz.resize(desiredoutput.size());
+  
+  geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, bpx, bpy, bpz);
+
+  cout << "delta:" << endl;
+  printvectvect(delta);
   return 0;
 }
