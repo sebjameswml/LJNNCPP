@@ -266,6 +266,7 @@ int main(){
   vector<float> matmulproduct;
   vector<vector<float>> transposedweights;
   vector<vector<float>> nabla_w;
+  vector<vector<float>> nabla_b;
   //these resizes are required for learning
   bpx.resize(desiredoutput.size());
   bpy.resize(desiredoutput.size());
@@ -277,6 +278,7 @@ int main(){
   for (int i = 0; i < weights.size(); i++){
     nabla_w[i].resize(weights[i].size());
   }
+  nabla_b.resize(sizeof(sizes)/sizeof(*sizes)-1);
   delta.resize(sizeof(sizes)/sizeof(*sizes)-1);
   for (int i = 0; i < sizeof(sizes)/sizeof(*sizes)-1; i++){
     delta[i].resize(sizes[i+1]);
@@ -297,7 +299,11 @@ int main(){
     //these updates do not take an input for a learning rate yet
     //update biases
     for (int layer = 0; layer < biases.size(); layer++){
-      vectsub(biases[layer], delta[layer], biases[layer]);
+      nabla_b[layer] = delta[layer];
+      for(auto& nbi : nabla_b[layer]){
+	nbi = nbi * eta;
+      }
+      vectsub(biases[layer], nabla_b[layer], biases[layer]);
     }
     
     //update weights
@@ -308,8 +314,8 @@ int main(){
       }
       for (int vs = 0; vs < weights.size(); vs++){
 	//multiply nabla_w by eta
-	for (int nwi = 0; nwi < nabla_w[layer].size(); nwi++){
-	  nabla_w[layer][nwi] = nabla_w[layer][nwi] * eta;
+	for (auto& nwi : nabla_w[layer]){
+	  nwi = nwi * eta;
 	}
 	//subtract nabla_w from weights
         vectsub(weights[layer][vs], nabla_w[layer], weights[layer][vs]);
