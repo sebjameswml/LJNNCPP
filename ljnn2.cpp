@@ -202,6 +202,15 @@ void geterrors(
     hadamard(matmulproduct, sigprime, delta[layer]);
   }
 }
+//mean squared error cost function
+float MSE(vector<float> outputactivations, vector<float> desiredoutput){
+  float cost = 0;
+  for (int i = 0; i < desiredoutput.size(); i++){
+    float x = outputactivations[i] - desiredoutput[i];
+    cost += pow(x, 2.0f);
+  }
+  return cost;
+}
 
 
 
@@ -245,17 +254,8 @@ int main(){
   for (int i = 0; i < sizeof(sizes)/sizeof(*sizes); i++){
     presigactivations[i].resize(sizes[i]);
   }
-  //create vectors used to hold data, defined out-of function for possible optimisation
+  //vector requred for feedforwards
   vector<float> ffx;
-  //set input activations:
-  activations[0] = {1,1};
-  //run a single feedforwards pass
-  feedforwards(weights, biases, activations, presigactivations, ffx);
-  //print activations
-  cout << "activations:" << endl;
-  printvectvect(activations);
-
-
   //vectors required for backprop
   vector<float> bpx;
   vector<float> bpy;
@@ -265,20 +265,60 @@ int main(){
   vector<float> sigprime;
   vector<float> matmulproduct;
   vector<vector<float>> transposedweights;
-  //these resizes are required for the geterrors() function
+  vector<vector<float>> nabla_w;
+  //these resizes are required for learning
   bpx.resize(desiredoutput.size());
   bpy.resize(desiredoutput.size());
   bpz.resize(desiredoutput.size());
   int largestlayer = 4; //i am currently settings this manually, but i need to make something find the largest value in sizes!
   matmulproduct.resize(largestlayer);
   sigprime.resize(largestlayer);
-  //give delta correct size
+    nabla_w.resize(weights.size());
+  for (int i = 0; i < weights.size(); i++){
+    nabla_w[i].resize(weights[i].size());
+  }
   delta.resize(sizeof(sizes)/sizeof(*sizes)-1);
   for (int i = 0; i < sizeof(sizes)/sizeof(*sizes)-1; i++){
     delta[i].resize(sizes[i+1]);
   }
-  geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, bpx, bpy, bpz, sigprime, matmulproduct, transposedweights);
-  cout << "delta:" << endl;
-  printvectvect(delta);
+
+  
+  /////////////////////////////////////////////
+  activations[0] = {1,1}; //set input
+  desiredoutput = {0.5,0.5,0.5,0.5};
+  float cost = 0;
+  float eta = 1;
+  for (int epoch = 0; epoch < 50; epoch++){
+    feedforwards(weights, biases, activations, presigactivations, ffx);
+    geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, bpx, bpy, bpz, sigprime, matmulproduct, transposedweights);
+    cost = MSE(activations.back(), desiredoutput);
+    cout << "cost:" << cost << endl;
+
+    //these updates do not take an input for a learning rate yet
+    //update biases
+    for (int layer = 0; layer < biases.size(); layer++){
+      vectsub(biases[layer], delta[layer], biases[layer]);
+    }
+    
+    //update weights
+    for (int layer = 0; layer < weights.size(); layer++){
+      
+      for (int mm = 0; mm < weights[layer].size(); mm++){
+        dot(delta[layer], activations[layer], nabla_w[layer][mm]);
+      }
+      for (int vs = 0; vs < weights.size(); vs++){
+	//multiply nabla_w by eta
+	for (int nwi = 0; nwi < nabla_w[layer].size(); nwi++){
+	  nabla_w[layer][nwi] = nabla_w[layer][nwi] * eta;
+	}
+	//subtract nabla_w from weights
+        vectsub(weights[layer][vs], nabla_w[layer], weights[layer][vs]);
+      }
+    }
+  }
+
+  
+  cout << "activations:" << endl;
+  printvectvect(activations);
   return 0;
 }
