@@ -172,7 +172,7 @@ void feedforwards(
     vectsigmoid(presigactivations[layer+1], activations[layer+1]); //sets activations[layer+1] to the (vect)sigmoid of presigactivations[layer]
   }
 }
-//backpropogation //geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, x, y, z);
+//backpropogation //geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, x, y, z, sigprime, matmulproduct, transposedweights);
 void geterrors(
 	       const vector<vector<vector<float>>>& weights,
 	       const vector<vector<float>>& biases,
@@ -182,7 +182,10 @@ void geterrors(
 	       const vector<float>& desiredoutput,
 	       vector<float>& x,
 	       vector<float>& y,
-	       vector<float>& z
+	       vector<float>& z,
+	       vector<float>& sigprime,
+	       vector<float>& matmulproduct,
+	       vector<vector<float>>& transposedweights
 	       ){
   //get error in output layer
   vectsub(activations.back(), desiredoutput, x); //make x output-desiredoutput
@@ -190,25 +193,12 @@ void geterrors(
   hadamard(x, y, z); //make z = the hadamard product of x and y
   delta.back() = z;
   //go backwards through the network and calculate delta for the remaining layers
-
-  //creating these should be done out of the function for epic speeds
-  vector<vector<float>> transposedweights;
-  vector<float> matmulproduct;
-  vector<float> sigprime;
-  
   for (int layer = delta.size()-2; layer > -1; layer--){
-
     transpose(weights[layer], transposedweights);
-
-    matmulproduct.resize(activations[layer+1].size());
     for (int mm = 0; mm < activations[layer+1].size(); mm++){
       dot(transposedweights[mm], delta[layer+1], matmulproduct[mm]);
     }
-
-    sigprime.resize(activations[layer+1].size());
     vectsigmoidprime(activations[layer+1], sigprime);
-
-    delta[layer].resize(activations[layer+1].size());
     hadamard(matmulproduct, sigprime, delta[layer]);
   }
 }
@@ -272,15 +262,22 @@ int main(){
   vector<float> bpz;
   vector<vector<float>> delta;
   vector<float> desiredoutput = {1,1,1,1};
+  vector<float> sigprime;
+  vector<float> matmulproduct;
+  vector<vector<float>> transposedweights;
   //these resizes are required for the geterrors() function
   bpx.resize(desiredoutput.size());
   bpy.resize(desiredoutput.size());
   bpz.resize(desiredoutput.size());
-
-  delta.resize(activations.size()-1);
-  
-  geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, bpx, bpy, bpz);
-
+  int largestlayer = 4; //i am currently settings this manually, but i need to make something find the largest value in sizes!
+  matmulproduct.resize(largestlayer);
+  sigprime.resize(largestlayer);
+  //give delta correct size
+  delta.resize(sizeof(sizes)/sizeof(*sizes)-1);
+  for (int i = 0; i < sizeof(sizes)/sizeof(*sizes)-1; i++){
+    delta[i].resize(sizes[i+1]);
+  }
+  geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, bpx, bpy, bpz, sigprime, matmulproduct, transposedweights);
   cout << "delta:" << endl;
   printvectvect(delta);
   return 0;
