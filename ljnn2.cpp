@@ -3,6 +3,8 @@
 #include <numeric>
 #include <random>
 #include <cmath>
+#include <fstream>
+#include <algorithm>
 using namespace std;
 
 //=============VECTOR CREATION=============
@@ -79,67 +81,74 @@ void printvectvectvect(const vector<vector<vector<float>>>& a){
 
 //=============MATH FUNCTIONS=============
 //sigmoid function
-void sigmoid(const float& a,
+float sigmoid(const float& a,
 	     float& tomod){ //tomod will be modified by this function
   tomod = 1/(1+exp(-a));
+  return tomod;
 }
 //sigmoid prime
-void sigmoidprime(const float& a,
+float sigmoidprime(const float& a,
 		  float& tomod){ //tomod will be modified by this function
   sigmoid(a, tomod);
   tomod = tomod*(1-tomod);
+  return tomod;
 }
 //sigmoid function for vectors
-void vectsigmoid(const vector<float>& a,
+vector<float> vectsigmoid(const vector<float>& a,
 		 vector<float>& vecttomod){ //vecttomod will be modified by this function
   for (int i = 0; i < a.size(); i++){
     sigmoid(a[i], vecttomod[i]);
   }
+  return vecttomod;
 }
 //sigmoid prime for vectors
-void vectsigmoidprime(const vector<float>& a,
+vector<float> vectsigmoidprime(const vector<float>& a,
 		      vector<float>& vecttomod){ //vecttomod will be modified by this function
   for (int i = 0; i < a.size(); i++){
     sigmoidprime(a[i], vecttomod[i]);
   }
+  return vecttomod;
 }
 //dot product of two vectors
-void dot(const vector<float>& a,
+float dot(const vector<float>& a,
 	 const vector<float>& b,
 	 float& product){ //product will be modified by this function
   product = 0;
   for (int i = 0; i < a.size(); i++){
     product += (a[i] * b[i]);
   }
+  return product;
 }
 //adds two vectors of the same size
-void vectadd(const vector<float>& a,
+vector<float> vectadd(const vector<float>& a,
 	     const vector<float>& b,
 	     vector<float>& product){ //product will be modified by this function
   for (int i = 0; i < a.size(); i ++){
     product[i] = a[i] + b[i];
   }
+  return product;
 }
 //sets product to vector a - vector b
-void vectsub(const vector<float>& a,
+vector<float> vectsub(const vector<float>& a,
 	     const vector<float>& b,
 	     vector<float>& product){ //product will be modified by this function
   for (int i = 0; i < a.size(); i++){
     product[i] = a[i] - b[i];
   }
+  return product;
 }
 //hadamard product for single vectors
-void hadamard(const vector<float>& a,
+vector<float> hadamard(const vector<float>& a,
 	      const vector<float>& b,
 	      vector<float>& product //all 3 of these vectors must have identical sizes.
 	      ){
   for (int i = 0; i < a.size(); i++){
     product[i] = a[i] * b[i];
   }
+  return product;
 }
 //transpose vector of vectors
-void transpose(const vector<vector<float>>& a, vector<vector<float>>& transposed){ //transposed will be modified by this function
-  //this resizing could be moved out of function for optimisation
+vector<vector<float>> transpose(const vector<vector<float>>& a, vector<vector<float>>& transposed){ //transposed will be modified by this function
   transposed.resize(a[0].size());
   for (int i = 0; i < transposed.size(); i++){
     transposed[i].resize(a.size());
@@ -150,6 +159,76 @@ void transpose(const vector<vector<float>>& a, vector<vector<float>>& transposed
       transposed[i][j] = a[j][i];
     }
   }
+  return transposed;
+}
+
+
+
+
+//=============MNIST LOADER=============
+int chars_to_int (const char* buf){
+  int rtn = (buf[3]&0xff) | (buf[2]&0xff)<<8 | (buf[1]&0xff)<<16 | (buf[0]&0xff)<<24;
+  return rtn;
+}
+
+vector<int> loadlabels(){
+  ifstream t_lab;
+  t_lab.open("train-labels-idx1-ubyte", ios::in | ios::binary);
+  //process file data
+  char buff[4];
+  t_lab.read(buff, 4);
+  int magic_labs = chars_to_int (buff);
+  t_lab.read(buff, 4);
+  int n_labs = chars_to_int (buff);
+  cout << "magic_labs " << magic_labs << endl;
+  cout << "n_labs " << n_labs << endl;
+  //create and resize labels vector
+  vector<int> labels;
+  labels.resize(n_labs);
+  //read values into labels vector
+  char lbuff[1];
+  for (int label = 0; label < n_labs; label++){
+    t_lab.read(lbuff, 1);
+    unsigned char uc = lbuff[0];
+    labels[label] = uc;
+  }
+  return labels;
+}
+
+vector<vector<float>> loadimages(){
+  ifstream t_img;
+  t_img.open("train-images-idx3-ubyte", ios::in | ios::binary);
+  //process file data
+  char buff[4];
+  t_img.read(buff, 4);
+  int magic_imgs = chars_to_int (buff);
+  t_img.read(buff, 4);
+  int n_imags = chars_to_int (buff);
+  t_img.read(buff, 4);
+  int n_rows = chars_to_int (buff);
+  t_img.read(buff, 4);
+  int n_cols = chars_to_int (buff);
+  cout << "magic_imgs " << magic_imgs << endl;
+  cout << "n_imags " << n_imags << endl;
+  cout << "n_cols " << n_cols << endl;
+  cout << "n_rows " << n_rows << endl;
+  //create and resize images vector
+  vector<vector<float>> images;
+  images.resize(n_imags);
+  for (int i = 0; i < n_imags; i++){
+    images[i].resize(n_cols*n_rows);
+  }
+  //read values into images vector
+  char pbuff[1];
+  for (int image = 0; image < n_imags; image++){
+    for (int pixel = 0; pixel < (n_rows*n_cols); pixel++){
+      t_img.read(pbuff, 1);
+      unsigned char uc = pbuff[0];
+      uc = uc/255; //normalize
+      images[image][pixel] = uc;
+    }
+  }
+  return images;
 }
 
 
@@ -159,17 +238,16 @@ void transpose(const vector<vector<float>>& a, vector<vector<float>>& transposed
 void feedforwards(
 		  const vector<vector<vector<float>>>& weights,
 		  const vector<vector<float>>& biases,
-		  vector<vector<float>>& activations,
-		  vector<vector<float>>& presigactivations,
-		  vector<float>& x
+		  vector<vector<float>>& _activations,
+		  vector<vector<float>>& _presigactivations,
+		  vector<float>& fx
 		  ){
-  for (int layer = 0; layer < activations.size()-1; layer++){
-    x.resize(activations[layer+1].size());
-    for (int neuron = 0; neuron < activations[layer].size(); neuron++){
-      dot(weights[layer][neuron], activations[layer], x[neuron]); //sets x to the dot product of weights[layer] and activations[layer]
+  for (int layer = 0; layer < _activations.size()-1; layer++){
+    for (int neuron = 0; neuron < _activations[layer].size(); neuron++){
+      dot(weights[layer][neuron], _activations[layer], fx[neuron]); //sets x to the dot product of weights[layer] and activations[layer]
     }
-    vectadd(x, biases[layer], presigactivations[layer+1]); //sets presigactivations[layer] to x+biases[layer]
-    vectsigmoid(presigactivations[layer+1], activations[layer+1]); //sets activations[layer+1] to the (vect)sigmoid of presigactivations[layer]
+    vectadd(fx, biases[layer], _presigactivations[layer+1]); //sets presigactivations[layer] to x+biases[layer]
+    vectsigmoid(_presigactivations[layer+1], _activations[layer+1]); //sets activations[layer+1] to the (vect)sigmoid of presigactivations[layer]
   }
 }
 //backpropogation //geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, x, y, z, sigprime, matmulproduct, transposedweights);
@@ -178,28 +256,33 @@ void geterrors(
 	       const vector<vector<float>>& biases,
 	       const vector<vector<float>>& activations,
 	       const vector<vector<float>>& presigactivations,
-	       vector<vector<float>>& delta,
+	       vector<vector<float>>& _delta,
 	       const vector<float>& desiredoutput,
 	       vector<float>& x,
 	       vector<float>& y,
 	       vector<float>& z,
 	       vector<float>& sigprime,
 	       vector<float>& matmulproduct,
-	       vector<vector<float>>& transposedweights
+	       vector<vector<float>>& _transposedweights
 	       ){
-  //get error in output layer
+
   vectsub(activations.back(), desiredoutput, x); //make x output-desiredoutput
   vectsigmoidprime(presigactivations.back(), y); //make y = sigmoid prime of output presigactivations
+  
   hadamard(x, y, z); //make z = the hadamard product of x and y
-  delta.back() = z;
+  _delta.back() = z;
   //go backwards through the network and calculate delta for the remaining layers
-  for (int layer = delta.size()-2; layer > -1; layer--){
-    transpose(weights[layer], transposedweights);
+  for (int layer = _delta.size()-2; layer > -1; layer--){
+    
+    matmulproduct.resize(_delta[layer].size());
+    sigprime.resize(_delta[layer].size());
+    
+    transpose(weights[layer], _transposedweights);
     for (int mm = 0; mm < activations[layer+1].size(); mm++){
-      dot(transposedweights[mm], delta[layer+1], matmulproduct[mm]);
+      dot(_transposedweights[mm], _delta[layer+1], matmulproduct[mm]);
     }
     vectsigmoidprime(activations[layer+1], sigprime);
-    hadamard(matmulproduct, sigprime, delta[layer]);
+    hadamard(matmulproduct, sigprime, _delta[layer]);
   }
 }
 //mean squared error cost function
@@ -218,7 +301,7 @@ float MSE(vector<float> outputactivations, vector<float> desiredoutput){
 //=============MAIN=============
 int main(){
   //set shape of network
-  int sizes[3] = {2,3,4};
+  int sizes[3] = {784,32,10};
   //create weights
   vector<vector<vector<float>>> weights;
   weights.resize(sizeof(sizes)/sizeof(*sizes)-1);
@@ -254,49 +337,63 @@ int main(){
   for (int i = 0; i < sizeof(sizes)/sizeof(*sizes); i++){
     presigactivations[i].resize(sizes[i]);
   }
-  //vector requred for feedforwards
-  vector<float> ffx;
   //vectors required for backprop
   vector<float> bpx;
   vector<float> bpy;
   vector<float> bpz;
-  vector<vector<float>> delta;
-  vector<float> desiredoutput = {1,1,1,1};
+  vector<float> desiredoutput;
   vector<float> sigprime;
   vector<float> matmulproduct;
+  matmulproduct.resize(784);
   vector<vector<float>> transposedweights;
-  vector<vector<float>> nabla_w;
-  vector<vector<float>> nabla_b;
-  //these resizes are required for learning
-  bpx.resize(desiredoutput.size());
-  bpy.resize(desiredoutput.size());
-  bpz.resize(desiredoutput.size());
-  int largestlayer = 4; //i am currently settings this manually, but i need to make something find the largest value in sizes!
-  matmulproduct.resize(largestlayer);
-  sigprime.resize(largestlayer);
-    nabla_w.resize(weights.size());
-  for (int i = 0; i < weights.size(); i++){
-    nabla_w[i].resize(weights[i].size());
-  }
-  nabla_b.resize(sizeof(sizes)/sizeof(*sizes)-1);
+  bpx.resize(10, 0.0f);
+  bpy.resize(10, 0.0f);
+  bpz.resize(10, 0.0f);
+
+  
+  vector<vector<float>> delta;
   delta.resize(sizeof(sizes)/sizeof(*sizes)-1);
   for (int i = 0; i < sizeof(sizes)/sizeof(*sizes)-1; i++){
     delta[i].resize(sizes[i+1]);
-  }
-
+    cout << delta [i].size() << endl;
+   }
   
-  /////////////////////////////////////////////
-  activations[0] = {1,1}; //set input
-  desiredoutput = {0.5,0.5,0.5,0.5};
   float cost = 0;
   float eta = 1;
-  for (int epoch = 0; epoch < 50; epoch++){
+  vector<float> ffx;
+  vector<vector<float>> nabla_b;
+  nabla_b.resize(biases.size());
+  vector<vector<vector<float>>> nabla_w;
+  
+  nabla_w.resize(weights.size());
+  for (int l = 0; l < weights.size(); l++){
+    nabla_w[l].resize(weights[l].size());
+    for (int l2 = 0; l2 < weights[l].size(); l2++){
+      nabla_w[l][l2].resize(weights[l][l2].size());
+    }
+  }
+  
+  ffx.resize(784); //this needs to be the largest item in sizes
+
+  vector<vector<float>>images = loadimages();
+  vector<int>labels = loadlabels();
+  int correct = 0;
+  int incorrect = 0;
+  int total = 0;
+  for (int image = 0; image < 60000; image++){
+    desiredoutput = {0,0,0,0,0,0,0,0,0,0};
+    desiredoutput[labels[image]] = 1;
+    activations[0] = images[image];
+    
     feedforwards(weights, biases, activations, presigactivations, ffx);
+    
     geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, bpx, bpy, bpz, sigprime, matmulproduct, transposedweights);
+
     cost = MSE(activations.back(), desiredoutput);
     cout << "cost:" << cost << endl;
-
-    //these updates do not take an input for a learning rate yet
+    cout << "img " << image << endl;
+    printvect(activations.back());
+    cout << "label " << labels[image] << endl;
     //update biases
     for (int layer = 0; layer < biases.size(); layer++){
       nabla_b[layer] = delta[layer];
@@ -305,24 +402,26 @@ int main(){
       }
       vectsub(biases[layer], nabla_b[layer], biases[layer]);
     }
-    
     //update weights
     for (int layer = 0; layer < weights.size(); layer++){
-      
-      for (int mm = 0; mm < weights[layer].size(); mm++){
-        dot(delta[layer], activations[layer], nabla_w[layer][mm]);
-      }
-      for (int vs = 0; vs < weights.size(); vs++){
-	//multiply nabla_w by eta
-	for (auto& nwi : nabla_w[layer]){
-	  nwi = nwi * eta;
+      for (int j = 0; j < activations[layer].size(); j++){
+        for (int k = 0; k < delta[layer].size(); k++){
+	  nabla_w[layer][j][k] = delta[layer][j];
+	  weights[layer][j][k] = weights[layer][j][k] - nabla_w[layer][j][k];
 	}
-	//subtract nabla_w from weights
-        vectsub(weights[layer][vs], nabla_w[layer], weights[layer][vs]);
       }
     }
-  }
+    if ((max_element(activations.back().begin(), activations.back().end())-activations.back().begin()) == labels[image]){
+      correct += 1;
+      total += 1;
+    }
+    else {
+      incorrect += 1;
+      total += 1;
+    }
 
+    cout << "correct: " << correct << " incorrect: " << incorrect << " total: " << total << endl;
+  }
   
   cout << "activations:" << endl;
   printvectvect(activations);
