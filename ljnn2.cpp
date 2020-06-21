@@ -224,7 +224,6 @@ vector<vector<float>> loadimages(){
     for (int pixel = 0; pixel < (n_rows*n_cols); pixel++){
       t_img.read(pbuff, 1);
       unsigned char uc = pbuff[0];
-      uc = uc/255; //normalize
       images[image][pixel] = uc;
     }
   }
@@ -281,7 +280,7 @@ void geterrors(
     for (int mm = 0; mm < activations[layer+1].size(); mm++){
       dot(_transposedweights[mm], _delta[layer+1], matmulproduct[mm]);
     }
-    vectsigmoidprime(activations[layer+1], sigprime);
+    vectsigmoidprime(presigactivations[layer+1], sigprime);
     hadamard(matmulproduct, sigprime, _delta[layer]);
   }
 }
@@ -301,7 +300,7 @@ float MSE(vector<float> outputactivations, vector<float> desiredoutput){
 //=============MAIN=============
 int main(){
   //set shape of network
-  int sizes[3] = {784,32,10};
+  int sizes[3] = {784,3,2};
   //create weights
   vector<vector<vector<float>>> weights;
   weights.resize(sizeof(sizes)/sizeof(*sizes)-1);
@@ -344,7 +343,7 @@ int main(){
   vector<float> desiredoutput;
   vector<float> sigprime;
   vector<float> matmulproduct;
-  matmulproduct.resize(784);
+  matmulproduct.resize(784);//this needs to be (at least) the same as the largest item in sizes
   vector<vector<float>> transposedweights;
   bpx.resize(10, 0.0f);
   bpy.resize(10, 0.0f);
@@ -373,7 +372,7 @@ int main(){
     }
   }
   
-  ffx.resize(784); //this needs to be the largest item in sizes
+  ffx.resize(784); //this needs to be (at least) the same as the largest item in sizes
 
   vector<vector<float>>images = loadimages();
   vector<int>labels = loadlabels();
@@ -381,46 +380,48 @@ int main(){
   int incorrect = 0;
   int total = 0;
   for (int image = 0; image < 60000; image++){
-    desiredoutput = {0,0,0,0,0,0,0,0,0,0};
-    desiredoutput[labels[image]] = 1;
-    activations[0] = images[image];
-    
+    desiredoutput = {1,1};
+    activations[0] = images[0];
+    //printvect(activations[0]);
     feedforwards(weights, biases, activations, presigactivations, ffx);
     
     geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, bpx, bpy, bpz, sigprime, matmulproduct, transposedweights);
 
     cost = MSE(activations.back(), desiredoutput);
     cout << "cost:" << cost << endl;
-    cout << "img " << image << endl;
-    printvect(activations.back());
-    cout << "label " << labels[image] << endl;
     //update biases
     for (int layer = 0; layer < biases.size(); layer++){
       nabla_b[layer] = delta[layer];
       for(auto& nbi : nabla_b[layer]){
 	nbi = nbi * eta;
       }
+
       vectsub(biases[layer], nabla_b[layer], biases[layer]);
     }
+    
     //update weights
+    bool breakout = false;
+    float preweights = 0.0f;
     for (int layer = 0; layer < weights.size(); layer++){
-      for (int j = 0; j < activations[layer].size(); j++){
-        for (int k = 0; k < delta[layer].size(); k++){
-	  nabla_w[layer][j][k] = delta[layer][j];
-	  weights[layer][j][k] = weights[layer][j][k] - nabla_w[layer][j][k];
+      for (int j = 0; j < weights[layer].size(); j++){
+	for (int k = 0; k < weights[layer][j].size(); k++){
+	  //cout << activations[layer][j] << " alj " << layer << endl;
+	  preweights = weights[layer][j][k];
+	  weights[layer][j][k] = weights[layer][j][k] - (activations[layer][j] * delta[layer][k]);
+	  if (isnan (weights[layer][j][k])) {
+	    cout << "weights[" << layer << "]["<<j<<"]["<<k<<"] is NaN\n";
+	    cout << "before, weights was " << preweights << endl;
+	    cout << "activations[" << layer << "]["<<j<<"]" << activations[layer][j] << endl;
+	    cout << "delta[" << layer << "]["<<k<<"]" << delta[layer][k] << endl;	    
+	    breakout = true;
+	  }
+	  if (breakout) { break; }
 	}
+	if (breakout) { break; }
       }
+      if (breakout) { break; }
     }
-    if ((max_element(activations.back().begin(), activations.back().end())-activations.back().begin()) == labels[image]){
-      correct += 1;
-      total += 1;
-    }
-    else {
-      incorrect += 1;
-      total += 1;
-    }
-
-    cout << "correct: " << correct << " incorrect: " << incorrect << " total: " << total << endl;
+    if (breakout) { break; }
   }
   
   cout << "activations:" << endl;
