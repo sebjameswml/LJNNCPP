@@ -145,7 +145,7 @@ vector<int> loadlabels(){
   //process file data
   char buff[4];
   t_lab.read(buff, 4);
-  int magic_labs = chars_to_int (buff);
+  //int magic_labs = chars_to_int (buff);
   t_lab.read(buff, 4);
   int n_labs = chars_to_int (buff);
   cout << "n_labs " << n_labs << endl;
@@ -168,7 +168,7 @@ vector<vector<float>> loadimages(){
   //process file data
   char buff[4];
   t_img.read(buff, 4);
-  int magic_imgs = chars_to_int (buff);
+  //int magic_imgs = chars_to_int (buff);
   t_img.read(buff, 4);
   int n_imags = chars_to_int (buff);
   t_img.read(buff, 4);
@@ -278,7 +278,8 @@ int main(){
   uniform_real_distribution<> dist(0,1);
 
   //set shape of network
-  int sizes[3] = {784,32,10};
+  int sizes[3] = {2,3,2};
+
   int largest = *max_element(sizes, sizes+sizeof(sizes)/sizeof(*sizes)); //this needs changing so it doesnt count the input layer
   //create weights
   vector<vector<vector<float>>> weights;
@@ -343,15 +344,17 @@ int main(){
   vector<float> desiredoutput;
   desiredoutput.resize(sizes[2]);
   float cost;
-
+#if 0
   vector<vector<float>> images = loadimages();
   for (auto& image : images){
     for (auto& pixel : image){
       pixel = pixel / 255;
     }
   }
+#endif
+
   vector<int> labels = loadlabels();
-  bool nanfound = false;
+  //bool nanfound = false;
   float eta = 1; //learning rate
 
   vector<vector<float>> nabla_b;
@@ -366,12 +369,23 @@ int main(){
     }
   }
 
+#if 0
+  // Example inputs and outputs used in morphologica/examples/neuralnet/ff_small.cpp:
+  std::vector<morph::vVector<float>> ins = {{0.05, 0.0025}, {0.2, 0.04}, {0.4, 0.16}, {0.6, 0.36}, {0.8, 0.64}};
+  std::vector<morph::vVector<float>> outs = {{0.8, 0.95}, {0.6, 0.7}, {0.4, 0.5}, {0.2, 0.2}, {0.05, 0.05}};
+#endif
+  vector<vector<float>> images = {{0.05, 0.0025}, {0.2, 0.04}, {0.4, 0.16}, {0.6, 0.36}, {0.8, 0.64}};
+  vector<vector<float>> outs = {{0.8, 0.95}, {0.6, 0.7}, {0.4, 0.5}, {0.2, 0.2}, {0.05, 0.05}};
 
-  for (int image = 0; image < 100; image++){
+  //                           v-- only doing one
+  for (int image = 0; image < 1; image++){
     cout << "=-=-=-=-=-=-=-=" << endl;
     activations[0] = images[image]; //set input activations
+#if 0
     desiredoutput = {0,0,0,0,0,0,0,0,0,0}; //set desired output
     desiredoutput[labels[image]] = 1;
+#endif
+    desiredoutput = outs[image];
     //run forwards pass
     feedforwards(weights, biases, activations, presigactivations, ffx);
     //run backwards pass
@@ -388,8 +402,8 @@ int main(){
       }
       vectsub(biases[layer], nabla_b[layer], biases[layer]);
     }
-
   }
+
   cout << "activations:" << endl;
   printvectvect(activations);
   return 0;
