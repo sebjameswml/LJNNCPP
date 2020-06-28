@@ -121,7 +121,7 @@ vector<vector<float>> transpose(const vector<vector<float>>& a, vector<vector<fl
   for (int i = 0; i < transposed.size(); i++){
     transposed[i].resize(a.size());
   }
-  
+
   for (vector<int>::size_type i = 0; i < a[0].size(); i++){
     for (vector<int>::size_type j = 0; j < a.size(); j++){
       transposed[i][j] = a[j][i];
@@ -208,11 +208,11 @@ void feedforwards(
 		  ){
   _presigactivations[0] = _activations[0];
   for (int layer = 0; layer < _activations.size()-1; layer++){
-    
+
     for (auto& i : fx){
       i = 0;
     }
-    
+
     for (int neuron = 0; neuron < _activations[layer+1].size(); neuron++){
       for (int dot = 0; dot < _activations[layer].size(); dot++){
 	fx[neuron] += _activations[layer][dot] * weights[layer][neuron][dot];
@@ -246,7 +246,7 @@ void geterrors(
   hadamard(x, y, z); //make z = the hadamard product of x and y
   _delta.back() = z;
   //go backwards through the network and calculate delta for the remaining layers
-  for (int layer = _delta.size()-2; layer > -1; layer--){  
+  for (int layer = _delta.size()-2; layer > -1; layer--){
     matmulproduct.resize(_delta[layer].size());
     sigprime.resize(_delta[layer].size());
     transpose(weights[layer], _transposedweights);
@@ -276,7 +276,7 @@ int main(){
   random_device rd;
   mt19937 randf(rd());
   uniform_real_distribution<> dist(0,1);
-  
+
   //set shape of network
   int sizes[3] = {784,32,10};
   int largest = *max_element(sizes, sizes+sizeof(sizes)/sizeof(*sizes)); //this needs changing so it doesnt count the input layer
@@ -357,7 +357,7 @@ int main(){
   vector<vector<float>> nabla_b;
   nabla_b.resize(biases.size());
   vector<vector<vector<float>>> nabla_w;
-  
+
   nabla_w.resize(weights.size());
   for (int l = 0; l < weights.size(); l++){
     nabla_w[l].resize(weights[l].size());
@@ -366,7 +366,7 @@ int main(){
     }
   }
 
-  
+
   for (int image = 0; image < 100; image++){
     cout << "=-=-=-=-=-=-=-=" << endl;
     activations[0] = images[image]; //set input activations
