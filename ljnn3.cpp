@@ -76,8 +76,8 @@ vector<float> vectsigmoidprime(const vector<float>& a,
 }
 //dot product of two vectors
 float dot(const vector<float>& a,
-	 const vector<float>& b,
-	 float& product){ //product will be modified by this function
+          const vector<float>& b,
+          float& product){ //product will be modified by this function
   if (a.size() != b.size()){
     throw runtime_error("dot product received vectors of different sizes");
   }
@@ -206,17 +206,12 @@ void feedforwards(
 		  vector<vector<float>>& _presigactivations,
 		  vector<float>& fx
 		  ){
+  cout << "size: presigact: " << _presigactivations[0].size() << ", _activations: " << _activations[0].size() << endl;
   _presigactivations[0] = _activations[0];
   for (int layer = 0; layer < _activations.size()-1; layer++){
-
-    for (auto& i : fx){
-      i = 0;
-    }
-
+    // Dot product of activations and weights
     for (int neuron = 0; neuron < _activations[layer+1].size(); neuron++){
-      for (int dot = 0; dot < _activations[layer].size(); dot++){
-	fx[neuron] += _activations[layer][dot] * weights[layer][neuron][dot];
-      }
+      dot (_activations[layer], weights[layer][neuron], fx[neuron]);
     }
     printvect(fx);
     cout << "fxfxfxfx" << endl;
@@ -269,7 +264,6 @@ float MSE(vector<float> outputactivations, vector<float> desiredoutput){
 
 
 
-
 //=============MAIN=============
 int main(){
   //set up RNG
@@ -278,12 +272,14 @@ int main(){
   uniform_real_distribution<> dist(0,1);
 
   //set shape of network
-  int sizes[3] = {2,3,2};
+  vector<int> sizes = {2,3,2};
 
-  int largest = *max_element(sizes, sizes+sizeof(sizes)/sizeof(*sizes)); //this needs changing so it doesnt count the input layer
+  vector<int>::iterator sz_begin = sizes.begin();
+  int largest = *max_element (++sz_begin, sizes.end()); // max element of sizes after first layer
   //create weights
   vector<vector<vector<float>>> weights;
-  weights.resize(sizeof(sizes)/sizeof(*sizes)-1);
+  weights.resize(sizes.size()-1);
+
   for (int layer = 0; layer < weights.size(); layer++){
     weights[layer].resize(sizes[layer]);
     for (int sublayer = 0; sublayer < weights[layer].size(); sublayer++){
@@ -295,7 +291,7 @@ int main(){
   }
   //create biases
   vector<vector<float>> biases;
-  biases.resize(sizeof(sizes)/sizeof(*sizes)-1);
+  biases.resize(sizes.size()-1);
   for (int layer = 0; layer < biases.size(); layer++){
     biases[layer].resize(sizes[layer+1]);
     for (int item = 0; item < biases[layer].size(); item++){
@@ -304,13 +300,13 @@ int main(){
   }
   //create activations vector
   vector<vector<float>> activations;
-  activations.resize(sizeof(sizes)/sizeof(*sizes));
+  activations.resize(sizes.size());
   for (int layer = 0; layer < activations.size(); layer++){
     activations[layer].resize(sizes[layer]);
   }
   //create presigactivations vector
   vector<vector<float>> presigactivations;
-  presigactivations.resize(sizeof(sizes)/sizeof(*sizes));
+  presigactivations.resize(sizes.size());
   for (int layer = 0; layer < presigactivations.size(); layer++){
     presigactivations[layer].reserve(largest);
     presigactivations[layer].resize(sizes[layer]);
@@ -332,12 +328,12 @@ int main(){
   vector<float> bpmatmulproduct;
   bpmatmulproduct.resize(largest);
   vector<vector<float>> transposedweights;
-  transposedweights.resize(sizeof(sizes)/sizeof(*sizes));
+  transposedweights.resize(sizes.size());
   for (int layer = 0; layer < transposedweights.size(); layer++){
     transposedweights[layer].reserve(largest);
   }
   vector<vector<float>> delta;
-  delta.resize(sizeof(sizes)/sizeof(*sizes)-1);
+  delta.resize(sizes.size()-1);
   for (int layer = 0; layer < delta.size(); layer++){
     delta[layer].resize(sizes[layer+1]);
   }
@@ -369,11 +365,7 @@ int main(){
     }
   }
 
-#if 0
   // Example inputs and outputs used in morphologica/examples/neuralnet/ff_small.cpp:
-  std::vector<morph::vVector<float>> ins = {{0.05, 0.0025}, {0.2, 0.04}, {0.4, 0.16}, {0.6, 0.36}, {0.8, 0.64}};
-  std::vector<morph::vVector<float>> outs = {{0.8, 0.95}, {0.6, 0.7}, {0.4, 0.5}, {0.2, 0.2}, {0.05, 0.05}};
-#endif
   vector<vector<float>> images = {{0.05, 0.0025}, {0.2, 0.04}, {0.4, 0.16}, {0.6, 0.36}, {0.8, 0.64}};
   vector<vector<float>> outs = {{0.8, 0.95}, {0.6, 0.7}, {0.4, 0.5}, {0.2, 0.2}, {0.05, 0.05}};
 
@@ -388,6 +380,7 @@ int main(){
     desiredoutput = outs[image];
     //run forwards pass
     feedforwards(weights, biases, activations, presigactivations, ffx);
+    break;
     //run backwards pass
     //geterrors(weights, biases, activations, presigactivations, delta, desiredoutput, bpx, bpy, bpz, bpsigprime, bpmatmulproduct, transposedweights);
     //get cost (only required for tracking training)
